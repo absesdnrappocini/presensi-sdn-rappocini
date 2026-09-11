@@ -63,13 +63,12 @@
     <span id="userNameHeader" class="text-xs font-bold text-slate-200 block truncate max-w-[110px]">Guru</span>
     <span id="userRoleBadge" class="text-[10px] bg-indigo-500/30 text-indigo-300 px-2 py-0.5 rounded-full border border-indigo-400/30 font-semibold">Guru</span>
   </div>
-  <!-- Tombol Logout -->
-  <button onclick="logoutUser()" class="bg-rose-500/20 hover:bg-rose-500/30 text-rose-400 border border-rose-500/30 px-2.5 py-1.5 rounded-xl text-xs font-bold flex items-center space-x-1 transition cursor-pointer">
+  <!-- Tombol Logout (Ikon Saja) -->
+  <button onclick="logoutUser()" title="Keluar" class="bg-rose-500/20 hover:bg-rose-500/30 text-rose-400 border border-rose-500/30 p-2 rounded-xl text-xs font-bold flex items-center justify-center transition cursor-pointer">
     <i class="fas fa-sign-out-alt"></i>
-    <span>Keluar</span>
   </button>
 </div>
-    </header>
+</header>
 
     <!-- FLOATING TOAST NOTIFICATION -->
     <div id="toastNotification" class="fixed top-16 left-1/2 transform -translate-x-1/2 z-50 w-11/12 max-w-xs transition-all duration-300 opacity-0 pointer-events-none">
@@ -653,6 +652,10 @@
       document.getElementById('userHeaderBadge').classList.remove('hidden');
 
       document.getElementById('userNameHeader').innerText = currentUser.nama_guru;
+      // Update tanggal kartu presensi secara otomatis
+  const today = new Date();
+  const options = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
+  document.getElementById('guruProfileDate').innerText = today.toLocaleDateString('id-ID', options);
       document.getElementById('userRoleBadge').innerText = currentUser.status;
 
       document.getElementById('guruProfileName').innerText = currentUser.nama_guru;
