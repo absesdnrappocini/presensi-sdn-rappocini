@@ -532,7 +532,7 @@
   <!-- ================= JAVASCRIPT LOGIC ================= -->
   <script>
     // URL Web App Google Apps Script
-    const urlServer = "https://script.google.com/macros/s/AKfycbzx6VcMh4LjDqxQ1qbGVicE6Z778Dcozzr5LnW9pxIxs4hpcW8v8qH7PZDTW4ln2el7/exec";
+    const urlServer = "https://script.google.com/macros/s/AKfycbwasKohELv_mBH7Sv9gt-j6PAsvuihGi-FL33vrDiukz9x13uOeEscZrMbPzmVK2E_s/exec";
 
     // Global State Application
     let currentUser = null;
@@ -546,6 +546,7 @@
     // INITIALIZATION & CLOCK
     // ---------------------------------------------------------------
     window.addEventListener('DOMContentLoaded', () => {
+      loadPengaturan();
       startClockWita();
       checkSavedSession();
       initDates();
@@ -793,28 +794,46 @@
     }
 
     async function handleSavePengaturanSubmit(e) {
-      e.preventDefault();
-      const payload = {
-        action: 'update_pengaturan_jam',
-        jam_pagi_masuk: document.getElementById('cfgPagiMasuk').value,
-        jam_pagi_pulang: document.getElementById('cfgPagiPulang').value,
-        jam_siang_masuk: document.getElementById('cfgSiangMasuk').value,
-        jam_siang_pulang: document.getElementById('cfgSiangPulang').value,
-        lat_sekolah: document.getElementById('cfgLat').value,
-        lng_sekolah: document.getElementById('cfgLng').value,
-        radius_meter: document.getElementById('cfgRadius').value,
-        status_geofence: document.getElementById('cfgStatusGeofence').value
-      };
+  e.preventDefault();
+  currentConfig = {
+    pagiMasuk: document.getElementById("cfgPagiMasuk").value,
+    pagiPulang: document.getElementById("cfgPagiPulang").value,
+    siangMasuk: document.getElementById("cfgSiangMasuk").value,
+    siangPulang: document.getElementById("cfgSiangPulang").value,
+    lat: document.getElementById("cfgLat").value,
+    lng: document.getElementById("cfgLng").value,
+    radius: document.getElementById("cfgRadius").value,
+    geofence: document.getElementById("cfgStatusGeofence").value
+  };
 
-      const res = await apiPost(payload);
-      if (res.success) {
-        showToast("Pengaturan berhasil disimpan!");
-        closeModal('modalPengaturanSekolah');
-        loadConfigData();
-      } else {
-        showToast(res.message, "error");
-      }
+  localStorage.setItem("presensi_config", JSON.stringify(currentConfig));
+
+  closeModal("modalPengaturanSekolah");
+  showToast("Menyimpan pengaturan...", "info");
+
+  try {
+    const resp = await fetch(urlServer, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({ action: "savePengaturan", config: currentConfig })
+    });
+    const res = await resp.json();
+    if (res.status === "success") {
+      showToast("Pengaturan sekolah berhasil diperbarui!", "success");
+    } else {
+      showToast(res.message || "Gagal menyimpan ke server!", "error");
     }
+  } catch (err) {
+    showToast("Gagal koneksi server!", "error");
+  }
+} // <-- Kurung penutup handleSavePengaturanSubmit
+
+// TARUH DI LUAR / DI BAWAH SINI:
+function loadPengaturan() {
+  const savedConfig = localStorage.getItem("presensi_config");
+  if (savedConfig) {
+    currentConfig = JSON.parse(savedConfig);
+  }
 
     // ---------------------------------------------------------------
     // PRESENSI ACTION (DATANG & PULANG)
@@ -1282,6 +1301,7 @@
     }
 
     function openPengaturanSekolahModal() {
+      loadPengaturan();
       openModal('modalPengaturanSekolah');
     }
 
