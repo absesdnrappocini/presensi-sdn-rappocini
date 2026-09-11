@@ -1,0 +1,1349 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>PRESENSI SDN RAPPOCINI</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <!-- Font Inter -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #0f172a;
+      color: #f8fafc;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .glass-card {
+      background: rgba(30, 41, 59, 0.75);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .glass-modal {
+      background: rgba(15, 23, 42, 0.92);
+      backdrop-filter: blur(16px);
+    }
+    /* Hide scrollbar for Chrome, Safari and Opera */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    /* Hide scrollbar for IE, Edge and Firefox */
+    .no-scrollbar {
+      -ms-overflow-style: none;  /* IE and Edge */
+      scrollbar-width: none;  /* Firefox */
+    }
+  </style>
+</head>
+<body class="flex flex-col min-h-screen justify-between items-center p-0 sm:p-4">
+
+  <!-- MAIN CONTAINER (HP Viewport Ready) -->
+  <div id="appContainer" class="w-full max-w-md min-h-screen sm:min-h-[840px] bg-slate-900 flex flex-col justify-between shadow-2xl relative overflow-hidden sm:rounded-3xl border border-slate-800">
+
+    <!-- HEADER STATUS BAR -->
+    <header class="bg-gradient-to-r from-blue-900/80 to-indigo-900/80 p-4 border-b border-indigo-500/20 flex justify-between items-center sticky top-0 z-30 backdrop-blur-md">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center font-black text-white text-lg shadow-lg shadow-indigo-500/30">
+          SDN
+        </div>
+        <div>
+          <h1 class="text-sm font-bold text-white tracking-wide">SDN RAPPOCINI</h1>
+          <p id="clockWita" class="text-xs font-semibold text-amber-400">00:00:00 WITA</p>
+        </div>
+      </div>
+      <div id="userHeaderBadge" class="hidden flex items-center space-x-3 text-right">
+  <div>
+    <span id="userNameHeader" class="text-xs font-bold text-slate-200 block truncate max-w-[110px]">Guru</span>
+    <span id="userRoleBadge" class="text-[10px] bg-indigo-500/30 text-indigo-300 px-2 py-0.5 rounded-full border border-indigo-400/30 font-semibold">Guru</span>
+  </div>
+  <!-- Tombol Logout -->
+  <button onclick="logoutUser()" class="bg-rose-500/20 hover:bg-rose-500/30 text-rose-400 border border-rose-500/30 px-2.5 py-1.5 rounded-xl text-xs font-bold flex items-center space-x-1 transition cursor-pointer">
+    <i class="fas fa-sign-out-alt"></i>
+    <span>Keluar</span>
+  </button>
+</div>
+    </header>
+
+    <!-- FLOATING TOAST NOTIFICATION -->
+    <div id="toastNotification" class="fixed top-16 left-1/2 transform -translate-x-1/2 z-50 w-11/12 max-w-xs transition-all duration-300 opacity-0 pointer-events-none">
+      <div id="toastContent" class="bg-emerald-600 text-white text-xs font-bold px-4 py-3 rounded-2xl shadow-2xl flex items-center space-x-2 border border-emerald-400/40">
+        <i id="toastIcon" class="fas fa-check-circle text-base"></i>
+        <span id="toastMessage">Pesan Notifikasi</span>
+      </div>
+    </div>
+
+    <!-- MAIN VIEW AREA -->
+    <main class="flex-1 overflow-y-auto p-4 space-y-4 no-scrollbar">
+
+      <!-- ================= VIEW 1: LOGIN ================= -->
+      <section id="viewLogin" class="space-y-6 pt-6">
+        <div class="text-center space-y-2">
+          <div class="w-20 h-20 bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 rounded-3xl flex items-center justify-center mx-auto mb-2 text-3xl shadow-inner">
+            <i class="fas fa-user-shield"></i>
+          </div>
+          <h2 class="text-xl font-extrabold text-white">Presensi Online Guru</h2>
+          <p class="text-xs text-slate-400">Kota Makassar, Sulawesi Selatan (WITA)</p>
+        </div>
+
+        <form id="formLogin" onsubmit="handleLoginSubmit(event)" class="glass-card p-5 rounded-3xl space-y-4">
+          <div>
+            <label class="text-xs font-medium text-slate-300 block mb-1.5"><i class="fas fa-id-card mr-1.5 text-indigo-400"></i>ID Guru / NIP</label>
+            <input type="text" id="loginIdGuru" required placeholder="Masukkan ID Guru..." class="w-full bg-slate-950/80 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500 transition-all">
+          </div>
+          <div>
+            <label class="text-xs font-medium text-slate-300 block mb-1.5"><i class="fas fa-lock mr-1.5 text-indigo-400"></i>Password</label>
+            <input type="password" id="loginPassword" required placeholder="Masukkan Password..." class="w-full bg-slate-950/80 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500 transition-all">
+          </div>
+          <button type="submit" id="btnLoginSubmit" class="w-full bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white font-bold py-3 rounded-xl shadow-lg shadow-indigo-600/30 transition-all flex justify-center items-center space-x-2">
+            <span>MASUK APLIKASI</span>
+            <i class="fas fa-arrow-right text-xs"></i>
+          </button>
+        </form>
+      </section>
+
+      <!-- ================= VIEW 2: BERANDA GURU ================= -->
+      <section id="viewBerandaGuru" class="hidden space-y-4">
+        <!-- Profile Card -->
+        <div class="glass-card p-4 rounded-2xl flex items-center space-x-3.5 border-l-4 border-l-indigo-500">
+          <div class="w-12 h-12 rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center text-indigo-400 text-xl font-bold">
+            <i class="fas fa-user-circle"></i>
+          </div>
+          <div class="flex-1 overflow-hidden">
+            <h3 id="guruProfileName" class="text-sm font-bold text-white truncate">Nama Guru</h3>
+            <p id="guruProfileJabatan" class="text-xs text-indigo-300 truncate">Kepala Sekolah / Guru Kelas</p>
+            <p id="guruProfileDate" class="text-[10px] text-slate-400 mt-0.5">Kamis, 10 September 2026</p>
+          </div>
+        </div>
+
+        <!-- Camera Selfie Module -->
+        <div class="glass-card p-3 rounded-2xl space-y-3">
+          <div class="flex justify-between items-center text-xs px-1">
+            <span class="font-bold text-slate-300"><i class="fas fa-camera mr-1 text-indigo-400"></i>Kamera Presensi Selfie</span>
+            <span id="gpsStatusBadge" class="bg-amber-500/20 text-amber-300 text-[10px] px-2 py-0.5 rounded-full border border-amber-500/30"><i class="fas fa-sync fa-spin mr-1"></i>Mencari GPS...</span>
+          </div>
+
+          <div class="relative w-full aspect-[4/3] bg-black rounded-xl overflow-hidden border border-slate-800 shadow-inner flex items-center justify-center">
+            <video id="webcamVideo" autoplay playsinline class="w-full h-full object-cover transform -scale-x-100"></video>
+            <canvas id="watermarkCanvas" class="hidden"></canvas>
+            
+            <div id="cameraOverlayText" class="absolute bottom-2 left-2 right-2 bg-slate-950/80 backdrop-blur-md p-2 rounded-lg border border-white/10 text-[10px] space-y-0.5 text-slate-200 pointer-events-none">
+              <p id="wmName" class="font-bold text-amber-400 truncate">SDN RAPPOCINI | -</p>
+              <p id="wmTime" class="text-[9px]">00:00:00 WITA</p>
+              <p id="wmGps" class="text-[9px] text-slate-400 truncate">GPS: Locating...</p>
+            </div>
+          </div>
+
+          <!-- Quick Action Attendance Buttons -->
+          <div class="grid grid-cols-2 gap-2.5 pt-1">
+            <button onclick="openShiftModal('Datang')" class="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold py-3 px-2 rounded-xl text-xs flex flex-col items-center justify-center space-y-1 shadow-lg shadow-emerald-600/20">
+              <i class="fas fa-sign-in-alt text-base"></i>
+              <span>ABSEN MASUK</span>
+            </button>
+            <button onclick="triggerAbsenPulang()" class="bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-500 hover:to-pink-500 text-white font-bold py-3 px-2 rounded-xl text-xs flex flex-col items-center justify-center space-y-1 shadow-lg shadow-rose-600/20">
+              <i class="fas fa-sign-out-alt text-base"></i>
+              <span>ABSEN PULANG</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Quick Shortcut Pengajuan Izin -->
+        <div class="space-y-2">
+          <p class="text-xs font-bold text-slate-400 px-1">PENGAJUAN PERMOHONAN IZIN</p>
+          <div class="grid grid-cols-3 gap-2">
+            <button onclick="openModalIzin('Izin')" class="glass-card hover:bg-slate-800 p-2.5 rounded-xl text-center space-y-1">
+              <i class="fas fa-envelope-open-text text-amber-400 text-base"></i>
+              <span class="text-[11px] font-semibold text-slate-200 block">Izin</span>
+            </button>
+            <button onclick="openModalIzin('Sakit')" class="glass-card hover:bg-slate-800 p-2.5 rounded-xl text-center space-y-1">
+              <i class="fas fa-notes-medical text-rose-400 text-base"></i>
+              <span class="text-[11px] font-semibold text-slate-200 block">Sakit</span>
+            </button>
+            <button onclick="openModalIzin('Dinas Luar')" class="glass-card hover:bg-slate-800 p-2.5 rounded-xl text-center space-y-1">
+              <i class="fas fa-briefcase text-blue-400 text-base"></i>
+              <span class="text-[11px] font-semibold text-slate-200 block">Dinas Luar</span>
+            </button>
+            <button onclick="openModalIzin('Cuti')" class="glass-card hover:bg-slate-800 p-2.5 rounded-xl text-center space-y-1">
+              <i class="fas fa-user-clock text-purple-400 text-base"></i>
+              <span class="text-[11px] font-semibold text-slate-200 block">Cuti</span>
+            </button>
+            <button onclick="openModalIzin('Lupa')" class="glass-card hover:bg-slate-800 p-2.5 rounded-xl text-center space-y-1 col-span-2">
+              <i class="fas fa-exclamation-triangle text-orange-400 text-base"></i>
+              <span class="text-[11px] font-semibold text-slate-200 block">Lupa Absen</span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= VIEW 3: RIWAYAT GURU ================= -->
+      <section id="viewRiwayatGuru" class="hidden space-y-4">
+        <div class="glass-card p-4 rounded-2xl space-y-3">
+          <h3 class="text-xs font-bold text-slate-200"><i class="fas fa-filter mr-1.5 text-indigo-400"></i>Filter Rentang Tanggal</h3>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="text-[10px] text-slate-400">Mulai:</label>
+              <input type="date" id="riwayatStartDate" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white">
+            </div>
+            <div>
+              <label class="text-[10px] text-slate-400">Selesai:</label>
+              <input type="date" id="riwayatEndDate" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white">
+            </div>
+          </div>
+          <button onclick="loadRiwayatData()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 rounded-xl text-xs">
+            TAMPILKAN DATA
+          </button>
+        </div>
+
+        <!-- Donut Chart -->
+        <div class="glass-card p-4 rounded-2xl space-y-2 text-center">
+          <h4 class="text-xs font-bold text-slate-300">Diagram Statistik Kehadiran</h4>
+          <div class="w-44 h-44 mx-auto relative">
+            <canvas id="chartRiwayat"></canvas>
+          </div>
+        </div>
+
+        <!-- Download Buttons -->
+        <div class="grid grid-cols-2 gap-2">
+          <button onclick="downloadLaporanPDF()" class="bg-rose-600/80 hover:bg-rose-600 text-white font-bold py-2.5 rounded-xl text-xs flex items-center justify-center space-x-1.5">
+            <i class="fas fa-file-pdf text-sm"></i>
+            <span>Cetak PDF</span>
+          </button>
+          <button onclick="downloadLaporanExcel()" class="bg-emerald-600/80 hover:bg-emerald-600 text-white font-bold py-2.5 rounded-xl text-xs flex items-center justify-center space-x-1.5">
+            <i class="fas fa-file-excel text-sm"></i>
+            <span>Export Excel</span>
+          </button>
+        </div>
+
+        <!-- Tabel Riwayat Rinci -->
+        <div class="glass-card p-3 rounded-2xl space-y-2 overflow-x-auto">
+          <h4 class="text-xs font-bold text-slate-300 mb-2">Daftar Catatan Presensi</h4>
+          <div id="tableRiwayatContainer" class="space-y-2">
+            <!-- Dynamic Content -->
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= VIEW 4: ADMIN DASHBOARD ================= -->
+      <section id="viewAdminDashboard" class="hidden space-y-4">
+        <!-- Date Picker Admin -->
+        <div class="glass-card p-3 rounded-2xl flex justify-between items-center">
+          <span class="text-xs font-bold text-slate-300">Tanggal Tinjau:</span>
+          <input type="date" id="adminDatePicker" onchange="loadAdminDashboardData()" class="bg-slate-950 border border-slate-700 rounded-lg px-2 py-1 text-xs text-amber-400 font-bold">
+        </div>
+
+        <!-- Summary Cards Grid (Interactive Clickable) -->
+        <div class="grid grid-cols-2 gap-2.5">
+          <div onclick="openAdminCategoryModal('tepat_waktu')" class="glass-card p-3.5 rounded-2xl cursor-pointer hover:border-emerald-500/50 transition-all border-l-4 border-l-emerald-500">
+            <p class="text-[10px] font-bold text-slate-400">TEPAT WAKTU</p>
+            <p id="statTepat" class="text-2xl font-black text-emerald-400 mt-1">0</p>
+            <p class="text-[9px] text-slate-500 mt-0.5">Klik untuk detail <i class="fas fa-chevron-right ml-0.5"></i></p>
+          </div>
+
+          <div onclick="openAdminCategoryModal('terlambat')" class="glass-card p-3.5 rounded-2xl cursor-pointer hover:border-amber-500/50 transition-all border-l-4 border-l-amber-500">
+            <p class="text-[10px] font-bold text-slate-400">TERLAMBAT</p>
+            <p id="statTerlambat" class="text-2xl font-black text-amber-400 mt-1">0</p>
+            <p class="text-[9px] text-slate-500 mt-0.5">Klik untuk detail <i class="fas fa-chevron-right ml-0.5"></i></p>
+          </div>
+
+          <div onclick="openAdminCategoryModal('izin_sakit')" class="glass-card p-3.5 rounded-2xl cursor-pointer hover:border-blue-500/50 transition-all border-l-4 border-l-blue-500">
+            <p class="text-[10px] font-bold text-slate-400">IZIN / SAKIT</p>
+            <p id="statIzin" class="text-2xl font-black text-blue-400 mt-1">0</p>
+            <p class="text-[9px] text-slate-500 mt-0.5">Klik untuk detail <i class="fas fa-chevron-right ml-0.5"></i></p>
+          </div>
+
+          <div onclick="openAdminCategoryModal('belum_absen')" class="glass-card p-3.5 rounded-2xl cursor-pointer hover:border-rose-500/50 transition-all border-l-4 border-l-rose-500">
+            <p class="text-[10px] font-bold text-slate-400">BELUM ABSEN / ALPA</p>
+            <p id="statBelum" class="text-2xl font-black text-rose-400 mt-1">0</p>
+            <p class="text-[9px] text-slate-500 mt-0.5">Kelola Status <i class="fas fa-chevron-right ml-0.5"></i></p>
+          </div>
+        </div>
+
+        <!-- Admin Quick Control Menu -->
+<button onclick="openModal('modalExportAdmin')" class="glass-card hover:bg-slate-800 p-3.5 rounded-2xl text-left flex items-center justify-between border border-emerald-500/30 w-full mt-2">
+  <div class="flex items-center space-x-3">
+    <div class="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-lg">
+      <i class="fas fa-file-excel"></i>
+    </div>
+    <div>
+      <p class="text-xs font-bold text-white">Export Rekap Bulanan (Excel)</p>
+      <p class="text-[10px] text-slate-400">Rekap Semua Guru + TTD Kepala Sekolah</p>
+    </div>
+  </div>
+  <i class="fas fa-chevron-right text-xs text-slate-500"></i>
+</button>
+        <div class="grid grid-cols-2 gap-2">
+          <button onclick="openNotifikasiModal()" class="glass-card hover:bg-slate-800 p-3 rounded-2xl text-left flex items-center space-x-3">
+            <div class="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center text-base">
+              <i class="fas fa-bell"></i>
+            </div>
+            <div>
+              <p class="text-xs font-bold text-white">Notifikasi Izin</p>
+              <p class="text-[9px] text-slate-400">Persetujuan Guru</p>
+            </div>
+          </button>
+
+          <button onclick="openPengaturanSekolahModal()" class="glass-card hover:bg-slate-800 p-3 rounded-2xl text-left flex items-center space-x-3">
+            <div class="w-9 h-9 rounded-xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center text-base">
+              <i class="fas fa-sliders-h"></i>
+            </div>
+            <div>
+              <p class="text-xs font-bold text-white">Kelola Sekolah</p>
+              <p class="text-[9px] text-slate-400">Jam Shift & GPS</p>
+            </div>
+          </button>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- FOOTER NAVBAR (MOBILE NAVIGATION) -->
+    <footer id="bottomNav" class="hidden bg-slate-950 border-t border-slate-800 p-2 grid grid-cols-3 gap-1 sticky bottom-0 z-30">
+      <button onclick="switchTab('beranda')" id="navBeranda" class="flex flex-col items-center justify-center py-1 text-indigo-400 font-bold">
+        <i class="fas fa-home text-base"></i>
+        <span class="text-[10px] mt-0.5">Beranda</span>
+      </button>
+      <button onclick="switchTab('riwayat')" id="navRiwayat" class="flex flex-col items-center justify-center py-1 text-slate-500 font-bold">
+        <i class="fas fa-history text-base"></i>
+        <span class="text-[10px] mt-0.5">Riwayat</span>
+      </button>
+      <button onclick="switchTab('admin')" id="navAdmin" class="hidden flex flex-col items-center justify-center py-1 text-slate-500 font-bold">
+        <i class="fas fa-user-shield text-base"></i>
+        <span class="text-[10px] mt-0.5">Admin</span>
+      </button>
+    </footer>
+
+  </div>
+
+  <!-- ================= MODAL 1: PILIHAN SHIFT (ABSEN MASUK) ================= -->
+  <div id="modalShift" class="fixed inset-0 z-50 glass-modal hidden flex items-center justify-center p-4">
+    <div class="glass-card w-full max-w-xs p-5 rounded-3xl space-y-4 border border-indigo-500/30">
+      <div class="text-center">
+        <h3 class="text-base font-bold text-white">Pilih Shift Kerja</h3>
+        <p class="text-xs text-slate-400">Jam operasional menyesuaikan shift</p>
+      </div>
+      <div class="space-y-2">
+        <button onclick="confirmAbsenMasuk('Shift Pagi')" class="w-full bg-slate-800 hover:bg-slate-700 border border-slate-700 p-3 rounded-2xl text-left flex justify-between items-center">
+          <div>
+            <p class="text-xs font-bold text-amber-400">Shift Pagi</p>
+            <p id="shiftPagiDesc" class="text-[10px] text-slate-400">Masuk: 07.30 | Pulang: 13.30 WITA</p>
+          </div>
+          <i class="fas fa-chevron-right text-xs text-slate-500"></i>
+        </button>
+
+        <button onclick="confirmAbsenMasuk('Shift Siang')" class="w-full bg-slate-800 hover:bg-slate-700 border border-slate-700 p-3 rounded-2xl text-left flex justify-between items-center">
+          <div>
+            <p class="text-xs font-bold text-blue-400">Shift Siang</p>
+            <p id="shiftSiangDesc" class="text-[10px] text-slate-400">Masuk: 11.00 | Pulang: 17.00 WITA</p>
+          </div>
+          <i class="fas fa-chevron-right text-xs text-slate-500"></i>
+        </button>
+      </div>
+      <button onclick="closeModal('modalShift')" class="w-full bg-slate-900 text-slate-400 font-bold py-2 rounded-xl text-xs">BATAL</button>
+    </div>
+  </div>
+
+  <!-- ================= MODAL 2: PENGAJUAN IZIN ================= -->
+  <div id="modalIzin" class="fixed inset-0 z-50 glass-modal hidden flex items-center justify-center p-4">
+    <div class="glass-card w-full max-w-xs p-5 rounded-3xl space-y-4">
+      <h3 id="modalIzinTitle" class="text-sm font-bold text-white text-center">Form Pengajuan Izin</h3>
+      <form onsubmit="handleFormIzinSubmit(event)" class="space-y-3">
+        <input type="hidden" id="izinTypeInput">
+        <div>
+          <label class="text-[10px] text-slate-400">Alasan / Keterangan Lengkap:</label>
+          <textarea id="izinAlasanInput" required rows="3" placeholder="Tuliskan alasan pengajuan..." class="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"></textarea>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <button type="button" onclick="closeModal('modalIzin')" class="bg-slate-800 text-slate-300 font-bold py-2 rounded-xl text-xs">BATAL</button>
+          <button type="submit" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 rounded-xl text-xs">KIRIM</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================= MODAL 3: DETAIL KATEGORI KEHADIRAN (ADMIN) ================= -->
+  <div id="modalAdminCategory" class="fixed inset-0 z-50 glass-modal hidden flex items-center justify-center p-4">
+    <div class="glass-card w-full max-w-md h-[80vh] p-4 rounded-3xl flex flex-col justify-between">
+      <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+        <h3 id="adminCategoryModalTitle" class="text-sm font-bold text-white">Detail Guru</h3>
+        <button onclick="closeModal('modalAdminCategory')" class="text-slate-400 hover:text-white"><i class="fas fa-times text-base"></i></button>
+      </div>
+
+      <div id="adminCategoryListContainer" class="flex-1 overflow-y-auto py-3 space-y-2.5 no-scrollbar">
+        <!-- List dynamic -->
+      </div>
+
+      <button onclick="closeModal('modalAdminCategory')" class="w-full bg-slate-800 text-slate-300 font-bold py-2 rounded-xl text-xs">TUTUP</button>
+    </div>
+  </div>
+
+  <!-- ================= MODAL 4: KELOLA ALPA / STATUS MANUAL (ADMIN) ================= -->
+  <div id="modalSetStatusManual" class="fixed inset-0 z-50 glass-modal hidden flex items-center justify-center p-4">
+    <div class="glass-card w-full max-w-xs p-4 rounded-3xl space-y-3">
+      <h3 class="text-xs font-bold text-white text-center">Tetapkan Status Presensi Manual</h3>
+      <p id="targetGuruManualName" class="text-xs text-amber-400 font-semibold text-center truncate">Nama Guru</p>
+      
+      <form onsubmit="handleSaveManualStatus(event)" class="space-y-3">
+        <input type="hidden" id="manualGuruId">
+        <input type="hidden" id="manualGuruName">
+        
+        <div>
+          <label class="text-[10px] text-slate-400">Pilih Status Baru:</label>
+          <select id="manualStatusSelect" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-xs text-white">
+            <option value="Alpa">Alpa (Tanpa Keterangan)</option>
+            <option value="Izin">Izin</option>
+            <option value="Sakit">Sakit</option>
+            <option value="Dinas Luar">Dinas Luar</option>
+            <option value="Cuti">Cuti</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="text-[10px] text-slate-400">Catatan / Keterangan:</label>
+          <input type="text" id="manualKeteranganInput" placeholder="Keterangan admin..." class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-xs text-white">
+        </div>
+
+        <div class="grid grid-cols-2 gap-2 pt-1">
+          <button type="button" onclick="closeModal('modalSetStatusManual')" class="bg-slate-800 text-slate-300 font-bold py-2 rounded-xl text-xs">BATAL</button>
+          <button type="submit" class="bg-rose-600 hover:bg-rose-500 text-white font-bold py-2 rounded-xl text-xs">SIMPAN</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================= MODAL 5: PUSAT NOTIFIKASI IZIN (ADMIN) ================= -->
+  <div id="modalNotifikasi" class="fixed inset-0 z-50 glass-modal hidden flex items-center justify-center p-4">
+    <div class="glass-card w-full max-w-sm h-[75vh] p-4 rounded-3xl flex flex-col justify-between">
+      <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+        <h3 class="text-sm font-bold text-white"><i class="fas fa-bell text-amber-400 mr-1.5"></i>Persetujuan Pengajuan Izin</h3>
+        <button onclick="closeModal('modalNotifikasi')" class="text-slate-400 hover:text-white"><i class="fas fa-times"></i></button>
+      </div>
+
+      <div id="notifikasiListContainer" class="flex-1 overflow-y-auto py-3 space-y-2.5 no-scrollbar">
+        <!-- List Dynamic -->
+      </div>
+
+      <button onclick="closeModal('modalNotifikasi')" class="w-full bg-slate-800 text-slate-300 font-bold py-2 rounded-xl text-xs">TUTUP</button>
+    </div>
+  </div>
+
+  <!-- ================= MODAL 6: KELOLA JAM & SEKOLAH (ADMIN) ================= -->
+  <div id="modalPengaturanSekolah" class="fixed inset-0 z-50 glass-modal hidden flex items-center justify-center p-4">
+    <div class="glass-card w-full max-w-sm max-h-[85vh] overflow-y-auto p-4 rounded-3xl space-y-3 no-scrollbar">
+      <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+        <h3 class="text-sm font-bold text-white"><i class="fas fa-sliders-h text-indigo-400 mr-1.5"></i>Pengaturan Sekolah & Shift</h3>
+        <button onclick="closeModal('modalPengaturanSekolah')" class="text-slate-400 hover:text-white"><i class="fas fa-times"></i></button>
+      </div>
+
+      <form onsubmit="handleSavePengaturanSubmit(event)" class="space-y-3">
+        <div class="space-y-2 bg-slate-950/60 p-3 rounded-2xl border border-slate-800">
+          <p class="text-[11px] font-bold text-amber-400">Jadwal Shift Pagi</p>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="text-[9px] text-slate-400">Jam Masuk:</label>
+              <input type="time" id="cfgPagiMasuk" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-1.5 text-xs text-white">
+            </div>
+            <div>
+              <label class="text-[9px] text-slate-400">Jam Pulang:</label>
+              <input type="time" id="cfgPagiPulang" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-1.5 text-xs text-white">
+            </div>
+          </div>
+        </div>
+
+        <div class="space-y-2 bg-slate-950/60 p-3 rounded-2xl border border-slate-800">
+          <p class="text-[11px] font-bold text-blue-400">Jadwal Shift Siang</p>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="text-[9px] text-slate-400">Jam Masuk:</label>
+              <input type="time" id="cfgSiangMasuk" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-1.5 text-xs text-white">
+            </div>
+            <div>
+              <label class="text-[9px] text-slate-400">Jam Pulang:</label>
+              <input type="time" id="cfgSiangPulang" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-1.5 text-xs text-white">
+            </div>
+          </div>
+        </div>
+
+        <div class="space-y-2 bg-slate-950/60 p-3 rounded-2xl border border-slate-800">
+          <p class="text-[11px] font-bold text-emerald-400">Geofencing Koordinat GPS</p>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="text-[9px] text-slate-400">Latitude Sekolah:</label>
+              <input type="text" id="cfgLat" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-1.5 text-xs text-white">
+            </div>
+            <div>
+              <label class="text-[9px] text-slate-400">Longitude Sekolah:</label>
+              <input type="text" id="cfgLng" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-1.5 text-xs text-white">
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="text-[9px] text-slate-400">Radius Toleransi (Meter):</label>
+              <input type="number" id="cfgRadius" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-1.5 text-xs text-white">
+            </div>
+            <div>
+              <label class="text-[9px] text-slate-400">Kunci Lokasi (Geofence):</label>
+              <select id="cfgStatusGeofence" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-1.5 text-xs text-white">
+                <option value="1">ON (Aktif)</option>
+                <option value="0">OFF (Non-Aktif)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2.5 rounded-xl text-xs">SIMPAN PENGATURAN</button>
+      </form>
+    </div>
+  </div>
+<!-- MODAL EXPORT REKAP BULANAN -->
+<div id="modalExportAdmin" class="fixed inset-0 z-50 glass-modal hidden flex items-center justify-center p-4">
+  <div class="glass-card w-full max-w-sm p-5 rounded-3xl space-y-4 border border-emerald-500/30">
+    <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+      <h3 class="text-sm font-bold text-white"><i class="fas fa-file-excel text-emerald-400 mr-2"></i>Export Rekap Presensi Guru</h3>
+      <button onclick="closeModal('modalExportAdmin')" class="text-slate-400 hover:text-white"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="space-y-3">
+      <p class="text-xs text-slate-300">Pilih rentang tanggal rekapitulasi:</p>
+      <div class="grid grid-cols-2 gap-2">
+        <div>
+          <label class="text-[10px] text-slate-400">Dari Tanggal:</label>
+          <input type="date" id="adminExportStartDate" class="w-full bg-slate-950 border border-slate-700 rounded-xl p-2 text-xs text-white">
+        </div>
+        <div>
+          <label class="text-[10px] text-slate-400">Sampai Tanggal:</label>
+          <input type="date" id="adminExportEndDate" class="w-full bg-slate-950 border border-slate-700 rounded-xl p-2 text-xs text-white">
+        </div>
+      </div>
+      <button onclick="processAdminExportExcel()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded-xl text-xs flex items-center justify-center space-x-2">
+        <i class="fas fa-download"></i>
+        <span>UNDUH FILE EXCEL (.XLS)</span>
+      </button>
+    </div>
+    <button onclick="closeModal('modalExportAdmin')" class="w-full bg-slate-800 text-slate-400 font-bold py-2 rounded-xl text-xs">BATAL</button>
+  </div>
+</div>
+  <!-- PRINT REPORT HIDDEN CONTAINER (PDF / EXPORT) -->
+  <div id="printArea" class="hidden"></div>
+
+  <!-- ================= JAVASCRIPT LOGIC ================= -->
+  <script>
+    // URL Web App Google Apps Script
+    const urlServer = "https://script.google.com/macros/s/AKfycbzx6VcMh4LjDqxQ1qbGVicE6Z778Dcozzr5LnW9pxIxs4hpcW8v8qH7PZDTW4ln2el7/exec";
+
+    // Global State Application
+    let currentUser = null;
+    let currentConfig = null;
+    let userLocation = { lat: 0, lng: 0, distance: 0, inRange: false };
+    let mediaStream = null;
+    let chartInstance = null;
+    let adminDashboardData = null;
+
+    // ---------------------------------------------------------------
+    // INITIALIZATION & CLOCK
+    // ---------------------------------------------------------------
+    window.addEventListener('DOMContentLoaded', () => {
+      startClockWita();
+      checkSavedSession();
+      initDates();
+    });
+
+    function startClockWita() {
+      setInterval(() => {
+        const now = new Date();
+        // Convert to WITA (UTC+8)
+        const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+        const wita = new Date(utc + (3600000 * 8));
+        
+        const h = String(wita.getHours()).padStart(2, '0');
+        const m = String(wita.getMinutes()).padStart(2, '0');
+        const s = String(wita.getSeconds()).padStart(2, '0');
+        const clockStr = `${h}:${m}:${s} WITA`;
+
+        document.getElementById('clockWita').innerText = clockStr;
+        document.getElementById('wmTime').innerText = clockStr;
+      }, 1000);
+    }
+
+    function initDates() {
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('riwayatStartDate').value = today;
+      document.getElementById('riwayatEndDate').value = today;
+      document.getElementById('adminDatePicker').value = today;
+    }
+
+    function checkSavedSession() {
+      const saved = localStorage.getItem('presensi_sdn_user');
+      if (saved) {
+        currentUser = JSON.parse(saved);
+        setupUserApp();
+      }
+    }
+
+    // ---------------------------------------------------------------
+    // NETWORK API CALLER
+    // ---------------------------------------------------------------
+    async function apiPost(data) {
+      try {
+        const response = await fetch(urlServer, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain' },
+          body: JSON.stringify(data)
+        });
+        return await response.json();
+      } catch (err) {
+        showToast("Gagal terhubung ke server: " + err.toString(), "error");
+        return { success: false, message: err.toString() };
+      }
+    }
+
+    function showToast(msg, type = "success") {
+      const toast = document.getElementById('toastNotification');
+      const content = document.getElementById('toastContent');
+      const icon = document.getElementById('toastIcon');
+      document.getElementById('toastMessage').innerText = msg;
+
+      if (type === "error") {
+        content.className = "bg-rose-600 text-white text-xs font-bold px-4 py-3 rounded-2xl shadow-2xl flex items-center space-x-2 border border-rose-400/40";
+        icon.className = "fas fa-exclamation-circle text-base";
+      } else {
+        content.className = "bg-emerald-600 text-white text-xs font-bold px-4 py-3 rounded-2xl shadow-2xl flex items-center space-x-2 border border-emerald-400/40";
+        icon.className = "fas fa-check-circle text-base";
+      }
+
+      toast.classList.remove('opacity-0', 'pointer-events-none');
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'pointer-events-none');
+      }, 3500);
+    }
+
+    // ---------------------------------------------------------------
+    // AUTHENTICATION LOGIC
+    // ---------------------------------------------------------------
+    async function handleLoginSubmit(e) {
+      e.preventDefault();
+      const btn = document.getElementById('btnLoginSubmit');
+      btn.disabled = true;
+      btn.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i> Memeriksa...`;
+
+      const idGuru = document.getElementById('loginIdGuru').value;
+      const pasword = document.getElementById('loginPassword').value;
+
+      const res = await apiPost({ action: 'login', id_guru: idGuru, pasword: pasword });
+      btn.disabled = false;
+      btn.innerHTML = `<span>MASUK APLIKASI</span><i class="fas fa-arrow-right text-xs"></i>`;
+
+      if (res.success) {
+        currentUser = res.user;
+        localStorage.setItem('presensi_sdn_user', JSON.stringify(currentUser));
+        showToast("Login Berhasil! Selamat datang " + currentUser.nama_guru);
+        setupUserApp();
+      } else {
+        showToast(res.message, "error");
+      }
+    }
+
+    function setupUserApp() {
+      document.getElementById('viewLogin').classList.add('hidden');
+      document.getElementById('bottomNav').classList.remove('hidden');
+      document.getElementById('userHeaderBadge').classList.remove('hidden');
+
+      document.getElementById('userNameHeader').innerText = currentUser.nama_guru;
+      document.getElementById('userRoleBadge').innerText = currentUser.status;
+
+      document.getElementById('guruProfileName').innerText = currentUser.nama_guru;
+      document.getElementById('guruProfileJabatan').innerText = currentUser.jabatan;
+
+      if (currentUser && currentUser.status === "Admin") {
+    document.getElementById('navAdmin').classList.remove('hidden');
+  } else {
+    document.getElementById('navAdmin').classList.add('hidden');
+  }
+
+      loadConfigData();
+      initCameraAndGPS();
+      switchTab('beranda');
+    }
+
+   function switchTab(tab) {
+  // Proteksi Hak Akses Admin
+  if ((tab === 'admin' || tab === 'adminDashboard') && (!currentUser || currentUser.status !== 'Admin')) {
+    if (typeof showToast === 'function') {
+      showToast("Akses Ditolak! Menu ini hanya untuk Admin.", "error");
+    } else {
+      alert("Akses Ditolak! Menu ini hanya untuk Admin.");
+    }
+    return;
+  }
+
+  // Sembunyikan semua tampilan
+  document.getElementById('viewBerandaGuru').classList.add('hidden');
+  document.getElementById('viewRiwayatGuru').classList.add('hidden');
+  document.getElementById('viewAdminDashboard').classList.add('hidden');
+
+  // Reset status navigasi bawah
+  document.getElementById('navBeranda').className = "flex flex-col items-center justify-center py-1 text-slate-500 font-bold";
+  document.getElementById('navRiwayat').className = "flex flex-col items-center justify-center py-1 text-slate-500 font-bold";
+  document.getElementById('navAdmin').className = "flex flex-col items-center justify-center py-1 text-slate-500 font-bold";
+
+  // Tampilkan tab yang dipilih
+  if (tab === 'beranda') {
+    document.getElementById('viewBerandaGuru').classList.remove('hidden');
+    document.getElementById('navBeranda').className = "flex flex-col items-center justify-center py-1 text-indigo-400 font-bold";
+  } else if (tab === 'riwayat') {
+    document.getElementById('viewRiwayatGuru').classList.remove('hidden');
+    document.getElementById('navRiwayat').className = "flex flex-col items-center justify-center py-1 text-indigo-400 font-bold";
+    loadRiwayatData();
+  } else if (tab === 'admin') {
+    document.getElementById('viewAdminDashboard').classList.remove('hidden');
+    document.getElementById('navAdmin').className = "flex flex-col items-center justify-center py-1 text-indigo-400 font-bold";
+    loadAdminDashboardData();
+  }
+}
+    // ---------------------------------------------------------------
+    // CAMERA & GPS GEOFENCING LOGIC
+    // ---------------------------------------------------------------
+    async function initCameraAndGPS() {
+      // Start Webcam
+      try {
+        const video = document.getElementById('webcamVideo');
+        mediaStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
+        video.srcObject = mediaStream;
+      } catch (e) {
+        showToast("Kamera tidak dapat diakses!", "error");
+      }
+
+      // Start GPS
+      if (navigator.geolocation) {
+        navigator.geolocation.watchPosition(updateGPSPosition, (err) => {
+          document.getElementById('gpsStatusBadge').innerText = "GPS Mati/Error";
+        }, { enableHighAccuracy: true });
+      }
+    }
+
+    function updateGPSPosition(pos) {
+      userLocation.lat = pos.coords.latitude;
+      userLocation.lng = pos.coords.longitude;
+
+      const gpsStr = `${userLocation.lat.toFixed(6)}, ${userLocation.lng.toFixed(6)}`;
+      document.getElementById('wmGps').innerText = "GPS: " + gpsStr;
+
+      if (currentConfig) {
+        const dist = calculateDistance(userLocation.lat, userLocation.lng, parseFloat(currentConfig.lat_sekolah), parseFloat(currentConfig.lng_sekolah));
+        userLocation.distance = dist;
+
+        const radiusMax = parseFloat(currentConfig.radius_meter);
+        const badge = document.getElementById('gpsStatusBadge');
+
+        if (dist <= radiusMax || currentConfig.status_geofence === "0") {
+          userLocation.inRange = true;
+          badge.className = "bg-emerald-500/20 text-emerald-300 text-[10px] px-2 py-0.5 rounded-full border border-emerald-500/30";
+          badge.innerHTML = `<i class="fas fa-check-circle mr-1"></i>Radius GPS OK (${Math.round(dist)}m)`;
+        } else {
+          userLocation.inRange = false;
+          badge.className = "bg-rose-500/20 text-rose-300 text-[10px] px-2 py-0.5 rounded-full border border-rose-500/30";
+          badge.innerHTML = `<i class="fas fa-times-circle mr-1"></i>Luar Radius (${Math.round(dist)}m)`;
+        }
+      }
+    }
+
+    // Haversine Formula (Meters)
+    function calculateDistance(lat1, lon1, lat2, lon2) {
+      const R = 6371e3; // metres
+      const φ1 = lat1 * Math.PI/180;
+      const φ2 = lat2 * Math.PI/180;
+      const Δφ = (lat2-lat1) * Math.PI/180;
+      const Δλ = (lon2-lon1) * Math.PI/180;
+
+      const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+                Math.cos(φ1) * Math.cos(φ2) *
+                Math.sin(Δλ/2) * Math.sin(Δλ/2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+      return R * c;
+    }
+
+    // ---------------------------------------------------------------
+    // PENGATURAN LOAD & SAVE
+    // ---------------------------------------------------------------
+    async function loadConfigData() {
+      const res = await apiPost({ action: 'get_pengaturan' });
+      if (res.success) {
+        currentConfig = res.config;
+        document.getElementById('shiftPagiDesc').innerText = `Masuk: ${currentConfig.jam_pagi_masuk} | Pulang: ${currentConfig.jam_pagi_pulang} WITA`;
+        document.getElementById('shiftSiangDesc').innerText = `Masuk: ${currentConfig.jam_siang_masuk} | Pulang: ${currentConfig.jam_siang_pulang} WITA`;
+
+        // Fill form config admin
+        document.getElementById('cfgPagiMasuk').value = currentConfig.jam_pagi_masuk;
+        document.getElementById('cfgPagiPulang').value = currentConfig.jam_pagi_pulang;
+        document.getElementById('cfgSiangMasuk').value = currentConfig.jam_siang_masuk;
+        document.getElementById('cfgSiangPulang').value = currentConfig.jam_siang_pulang;
+        document.getElementById('cfgLat').value = currentConfig.lat_sekolah;
+        document.getElementById('cfgLng').value = currentConfig.lng_sekolah;
+        document.getElementById('cfgRadius').value = currentConfig.radius_meter;
+        document.getElementById('cfgStatusGeofence').value = currentConfig.status_geofence;
+      }
+    }
+
+    async function handleSavePengaturanSubmit(e) {
+      e.preventDefault();
+      const payload = {
+        action: 'update_pengaturan_jam',
+        jam_pagi_masuk: document.getElementById('cfgPagiMasuk').value,
+        jam_pagi_pulang: document.getElementById('cfgPagiPulang').value,
+        jam_siang_masuk: document.getElementById('cfgSiangMasuk').value,
+        jam_siang_pulang: document.getElementById('cfgSiangPulang').value,
+        lat_sekolah: document.getElementById('cfgLat').value,
+        lng_sekolah: document.getElementById('cfgLng').value,
+        radius_meter: document.getElementById('cfgRadius').value,
+        status_geofence: document.getElementById('cfgStatusGeofence').value
+      };
+
+      const res = await apiPost(payload);
+      if (res.success) {
+        showToast("Pengaturan berhasil disimpan!");
+        closeModal('modalPengaturanSekolah');
+        loadConfigData();
+      } else {
+        showToast(res.message, "error");
+      }
+    }
+
+    // ---------------------------------------------------------------
+    // PRESENSI ACTION (DATANG & PULANG)
+    // ---------------------------------------------------------------
+    function openShiftModal(type) {
+      if (currentConfig && currentConfig.status_geofence === "1" && !userLocation.inRange) {
+        showToast(`Lokasi di luar radius toleransi (${Math.round(userLocation.distance)}m)!`, "error");
+        return;
+      }
+      document.getElementById('wmName').innerText = `SDN RAPPOCINI | ABSEN ${type.toUpperCase()}`;
+      openModal('modalShift');
+    }
+
+    function confirmAbsenMasuk(shift) {
+      closeModal('modalShift');
+      executeAbsenProcess("Datang", shift);
+    }
+
+    function triggerAbsenPulang() {
+      if (currentConfig && currentConfig.status_geofence === "1" && !userLocation.inRange) {
+        showToast(`Lokasi di luar radius toleransi (${Math.round(userLocation.distance)}m)!`, "error");
+        return;
+      }
+      document.getElementById('wmName').innerText = `SDN RAPPOCINI | ABSEN PULANG`;
+      executeAbsenProcess("Pulang", "");
+    }
+
+    async function executeAbsenProcess(tipe, shift) {
+      showToast("Memproses presensi & foto...", "info");
+
+      // Generate Base64 Photo from Watermark Canvas
+      const video = document.getElementById('webcamVideo');
+      const canvas = document.getElementById('watermarkCanvas');
+      canvas.width = 640;
+      canvas.height = 480;
+      const ctx = canvas.getContext('2d');
+
+      // Draw Video Flip
+      ctx.translate(640, 0);
+      ctx.scale(-1, 1);
+      ctx.drawImage(video, 0, 0, 640, 480);
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+
+      // Draw Gradient Watermark Overlay
+      ctx.fillStyle = "rgba(15, 23, 42, 0.85)";
+      ctx.fillRect(10, 360, 620, 110);
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.2)";
+      ctx.lineWidth = 2;
+      ctx.strokeRect(10, 360, 620, 110);
+
+      // Draw Text Watermark (Marki Style)
+      const nowStr = new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) + " | " + document.getElementById('clockWita').innerText;
+      const locStr = `GPS: ${userLocation.lat.toFixed(6)}, ${userLocation.lng.toFixed(6)}`;
+
+      ctx.fillStyle = "#fbbf24"; // Gold
+      ctx.font = "bold 18px Inter, sans-serif";
+      ctx.fillText("PRESENSI SDN RAPPOCINI - " + tipe.toUpperCase(), 25, 390);
+
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "14px Inter, sans-serif";
+      ctx.fillText(`Nama: ${currentUser.nama_guru} (${currentUser.jabatan})`, 25, 415);
+      ctx.fillText(`Waktu: ${nowStr}`, 25, 438);
+
+      ctx.fillStyle = "#94a3b8";
+      ctx.font = "12px Inter, sans-serif";
+      ctx.fillText(locStr, 25, 458);
+
+      const base64Photo = canvas.toDataURL('image/jpeg', 0.8);
+
+      const payload = {
+        action: 'absen',
+        id_guru: currentUser.id_guru,
+        nama_guru: currentUser.nama_guru,
+        tipe_absen: tipe,
+        shift: shift,
+        lokasi: `${userLocation.lat},${userLocation.lng}`,
+        foto_base64: base64Photo
+      };
+
+      const res = await apiPost(payload);
+      if (res.success) {
+        showToast(res.message);
+      } else {
+        showToast(res.message, "error");
+      }
+    }
+
+    // ---------------------------------------------------------------
+    // PENGAJUAN IZIN GURU
+    // ---------------------------------------------------------------
+    function openModalIzin(type) {
+      document.getElementById('izinTypeInput').value = type;
+      document.getElementById('modalIzinTitle').innerText = `Form Pengajuan ${type}`;
+      document.getElementById('izinAlasanInput').value = "";
+      openModal('modalIzin');
+    }
+
+    async function handleFormIzinSubmit(e) {
+      e.preventDefault();
+      const type = document.getElementById('izinTypeInput').value;
+      const alasan = document.getElementById('izinAlasanInput').value;
+
+      const payload = {
+        action: 'pengajuan_izin',
+        id_guru: currentUser.id_guru,
+        nama_guru: currentUser.nama_guru,
+        jenis_izin: type,
+        alasan: alasan
+      };
+
+      const res = await apiPost(payload);
+      if (res.success) {
+        showToast(res.message);
+        closeModal('modalIzin');
+      } else {
+        showToast(res.message, "error");
+      }
+    }
+
+    // ---------------------------------------------------------------
+    // RIWAYAT & DIAGRAM STATISTIK
+    // ---------------------------------------------------------------
+    async function loadRiwayatData() {
+      const start = document.getElementById('riwayatStartDate').value;
+      const end = document.getElementById('riwayatEndDate').value;
+
+      const res = await apiPost({
+        action: 'get_riwayat',
+        id_guru: currentUser.id_guru,
+        start_date: start,
+        end_date: end
+      });
+
+      if (res.success) {
+        renderRiwayatTable(res.data);
+        renderChart(res.stats);
+      }
+    }
+
+    function renderRiwayatTable(data) {
+      const container = document.getElementById('tableRiwayatContainer');
+      if (data.length === 0) {
+        container.innerHTML = `<p class="text-xs text-center text-slate-500 py-4">Belum ada catatan presensi pada periode ini.</p>`;
+        return;
+      }
+
+      let html = "";
+      data.forEach(item => {
+        let statusBg = "bg-emerald-500/20 text-emerald-300 border-emerald-500/30";
+        if (item.status_kehadiran.includes("Terlambat")) statusBg = "bg-amber-500/20 text-amber-300 border-amber-500/30";
+        if (item.status_kehadiran.includes("Izin") || item.status_kehadiran.includes("Sakit")) statusBg = "bg-blue-500/20 text-blue-300 border-blue-500/30";
+        if (item.status_kehadiran.includes("Alpa")) statusBg = "bg-rose-500/20 text-rose-300 border-rose-500/30";
+
+        html += `
+          <div class="bg-slate-950/70 p-3 rounded-xl border border-slate-800 text-xs space-y-1.5">
+            <div class="flex justify-between items-center">
+              <span class="font-bold text-slate-200">${item.tanggal}</span>
+              <span class="px-2 py-0.5 rounded-full border text-[10px] font-semibold ${statusBg}">${item.status_kehadiran}</span>
+            </div>
+            <div class="grid grid-cols-2 gap-1 text-[11px] text-slate-400">
+              <p><i class="fas fa-sign-in-alt text-emerald-400 mr-1"></i>Masuk: <strong class="text-slate-200">${item.jam_datang || '-'}</strong></p>
+              <p><i class="fas fa-sign-out-alt text-rose-400 mr-1"></i>Pulang: <strong class="text-slate-200">${item.jam_pulang || '-'}</strong></p>
+            </div>
+            <div class="flex justify-between items-center text-[10px] text-slate-400 pt-1 border-t border-slate-900">
+              <span>Durasi: <strong class="text-amber-300">${item.durasi_jam_kerja || '-'}</strong></span>
+              <span>Shift: ${item.shift || '-'}</span>
+            </div>
+          </div>
+        `;
+      });
+      container.innerHTML = html;
+    }
+
+    function renderChart(stats) {
+      const ctx = document.getElementById('chartRiwayat').getContext('2d');
+      if (chartInstance) chartInstance.destroy();
+
+      chartInstance = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: ['Tepat Waktu', 'Terlambat', 'Izin/Sakit', 'Alpa'],
+          datasets: [{
+            data: [stats.tepat, stats.terlambat, stats.izin, stats.alpa],
+            backgroundColor: ['#10b981', '#f59e0b', '#3b82f6', '#f43f5e'],
+            borderWidth: 0
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: { color: '#cbd5e1', font: { size: 10 } }
+            }
+          }
+        }
+      });
+    }
+
+    // ---------------------------------------------------------------
+    // EXPORT PDF & EXCEL REPORT GENERATOR
+    // ---------------------------------------------------------------
+    async function downloadLaporanPDF() {
+      const start = document.getElementById('riwayatStartDate').value;
+      const end = document.getElementById('riwayatEndDate').value;
+
+      const res = await apiPost({
+        action: 'get_riwayat',
+        id_guru: currentUser.id_guru,
+        start_date: start,
+        end_date: end
+      });
+
+      const dashRes = await apiPost({ action: 'get_dashboard_admin' });
+      const kepsek = dashRes.kepala_sekolah || "Nurfaisah, S.Pd., M.Pd.";
+
+      if (!res.success || res.data.length === 0) {
+        showToast("Tidak ada data untuk dicetak!", "error");
+        return;
+      }
+
+      let rowsHtml = "";
+      res.data.forEach((r, idx) => {
+        rowsHtml += `
+          <tr style="text-align: center; border-bottom: 1px solid #ccc;">
+            <td style="padding: 6px;">${idx + 1}</td>
+            <td style="padding: 6px;">${r.tanggal}</td>
+            <td style="padding: 6px;">${r.jam_datang || '-'}</td>
+            <td style="padding: 6px;">${r.jam_pulang || '-'}</td>
+            <td style="padding: 6px;">${r.durasi_jam_kerja || '-'}</td>
+            <td style="padding: 6px;">${r.status_kehadiran}</td>
+          </tr>
+        `;
+      });
+
+      const printHtml = `
+        <div style="font-family: Arial, sans-serif; padding: 20px; color: #000; background: #fff;">
+          <!-- KOP SURAT -->
+          <div style="text-align: center; border-bottom: 3px double #000; padding-bottom: 10px; margin-bottom: 15px;">
+            <h3 style="margin: 0; font-size: 14pt;">PEMERINTAH KOTA MAKASSAR</h3>
+            <h2 style="margin: 0; font-size: 16pt;">DINAS PENDIRIAN DAN KEBUDAYAAN</h2>
+            <h1 style="margin: 0; font-size: 18pt;">SD NEGERI RAPPOCINI</h1>
+            <p style="margin: 2px 0; font-size: 9pt;">Jl. Rappocini Raya No. 117, Kota Makassar, Sulawesi Selatan 90222</p>
+          </div>
+
+          <h3 style="text-align: center; margin-bottom: 15px; font-size: 12pt;">LAPORAN PRESENSI KEHADIRAN GURU</h3>
+
+          <table style="width: 100%; font-size: 10pt; margin-bottom: 15px;">
+            <tr><td style="width: 120px;">Nama Guru</td><td>: <strong>${currentUser.nama_guru}</strong></td></tr>
+            <tr><td>Jabatan</td><td>: ${currentUser.jabatan}</td></tr>
+            <tr><td>Periode Laporan</td><td>: ${start} s/d ${end}</td></tr>
+          </table>
+
+          <table style="width: 100%; border-collapse: collapse; font-size: 9pt;" border="1">
+            <thead>
+              <tr style="background: #f2f2f2;">
+                <th style="padding: 6px;">No</th>
+                <th style="padding: 6px;">Tanggal</th>
+                <th style="padding: 6px;">Jam Datang</th>
+                <th style="padding: 6px;">Jam Pulang</th>
+                <th style="padding: 6px;">Durasi Jam Kerja</th>
+                <th style="padding: 6px;">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rowsHtml}
+            </tbody>
+          </table>
+
+          <br><br>
+          <table style="width: 100%; font-size: 10pt;">
+            <tr>
+              <td style="width: 60%;"></td>
+              <td style="text-align: center;">
+                Makassar, ${new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}<br>
+                Kepala Sekolah SDN Rappocini,<br><br><br><br>
+                <strong><u>${kepsek}</u></strong>
+              </td>
+            </tr>
+          </table>
+        </div>
+      `;
+
+      const win = window.open('', '_blank');
+      win.document.write(`<html><head><title>Laporan Presensi - ${currentUser.nama_guru}</title></head><body>${printHtml}</body></html>`);
+      win.document.close();
+      win.focus();
+      setTimeout(() => { win.print(); }, 500);
+    }
+
+    async function downloadLaporanExcel() {
+      const start = document.getElementById('riwayatStartDate').value;
+      const end = document.getElementById('riwayatEndDate').value;
+
+      const res = await apiPost({
+        action: 'get_riwayat',
+        id_guru: currentUser.id_guru,
+        start_date: start,
+        end_date: end
+      });
+
+      if (!res.success || res.data.length === 0) {
+        showToast("Tidak ada data untuk di-export!", "error");
+        return;
+      }
+
+      let csvContent = "data:text/csv;charset=utf-8,";
+      csvContent += "Tanggal,ID Guru,Nama Guru,Jam Datang,Jam Pulang,Durasi Jam Kerja,Status Kehadiran,Shift,Keterangan\n";
+
+      res.data.forEach(r => {
+        csvContent += `"${r.tanggal}","${r.id_guru}","${r.nama_guru}","${r.jam_datang}","${r.jam_pulang}","${r.durasi_jam_kerja}","${r.status_kehadiran}","${r.shift}","${r.keterangan}"\n`;
+      });
+
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", `Laporan_Presensi_${currentUser.nama_guru}_${start}_sd_${end}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      showToast("Laporan Excel/CSV berhasil diunduh!");
+    }
+
+    // ---------------------------------------------------------------
+    // ADMIN DASHBOARD & KELOLA ALPA LOGIC
+    // ---------------------------------------------------------------
+    async function loadAdminDashboardData() {
+      const dateVal = document.getElementById('adminDatePicker').value;
+      const res = await apiPost({ action: 'get_dashboard_admin', tanggal: dateVal });
+
+      if (res.success) {
+        adminDashboardData = res;
+        document.getElementById('statTepat').innerText = res.summary.tepat_waktu;
+        document.getElementById('statTerlambat').innerText = res.summary.terlambat;
+        document.getElementById('statIzin').innerText = res.summary.izin_sakit;
+        document.getElementById('statBelum').innerText = res.summary.belum_absen;
+      }
+    }
+
+    function openAdminCategoryModal(key) {
+      if (!adminDashboardData) return;
+
+      const titles = {
+        'tepat_waktu': 'Guru Tepat Waktu',
+        'terlambat': 'Guru Terlambat',
+        'izin_sakit': 'Guru Izin / Sakit / Dinas',
+        'belum_absen': 'Guru Belum Absen / Kelola Alpa'
+      };
+
+      document.getElementById('adminCategoryModalTitle').innerText = titles[key];
+      const list = adminDashboardData.lists[key];
+      const container = document.getElementById('adminCategoryListContainer');
+
+      if (list.length === 0) {
+        container.innerHTML = `<p class="text-xs text-center text-slate-500 py-4">Tidak ada data untuk kategori ini.</p>`;
+      } else {
+        let html = "";
+        list.forEach(g => {
+          html += `
+            <div class="bg-slate-950/80 p-3 rounded-2xl border border-slate-800 space-y-2">
+              <div class="flex justify-between items-start">
+                <div>
+                  <h4 class="text-xs font-bold text-white">${g.nama_guru}</h4>
+                  <p class="text-[10px] text-indigo-300">${g.jabatan}</p>
+                </div>
+                ${key === 'belum_absen' ? 
+                  `<button onclick="openModalSetManual('${g.id_guru}', '${g.nama_guru}')" class="bg-rose-600 hover:bg-rose-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-lg">Set Status</button>` : 
+                  `<span class="text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full border border-slate-700">${g.status_kehadiran}</span>`}
+              </div>
+              
+              <div class="grid grid-cols-2 gap-2 text-[10px] text-slate-400 bg-slate-900/50 p-2 rounded-xl">
+                <p>Datang: <strong class="text-emerald-400">${g.jam_datang}</strong></p>
+                <p>Pulang: <strong class="text-rose-400">${g.jam_pulang}</strong></p>
+                <p class="col-span-2">Durasi: <strong class="text-amber-300">${g.durasi || '-'}</strong></p>
+              </div>
+
+              ${g.foto_datang ? `<a href="${g.foto_datang}" target="_blank" class="inline-block text-[10px] text-indigo-400 underline"><i class="fas fa-image mr-1"></i>Lihat Foto Selfie</a>` : ''}
+            </div>
+          `;
+        });
+        container.innerHTML = html;
+      }
+
+      openModal('modalAdminCategory');
+    }
+
+    function openModalSetManual(idGuru, namaGuru) {
+      document.getElementById('manualGuruId').value = idGuru;
+      document.getElementById('manualGuruName').value = namaGuru;
+      document.getElementById('targetGuruManualName').innerText = namaGuru;
+      openModal('modalSetStatusManual');
+    }
+
+    async function handleSaveManualStatus(e) {
+      e.preventDefault();
+      const payload = {
+        action: 'set_status_manual',
+        tanggal: document.getElementById('adminDatePicker').value,
+        id_guru: document.getElementById('manualGuruId').value,
+        nama_guru: document.getElementById('manualGuruName').value,
+        status_kehadiran: document.getElementById('manualStatusSelect').value,
+        keterangan: document.getElementById('manualKeteranganInput').value
+      };
+
+      const res = await apiPost(payload);
+      if (res.success) {
+        showToast(res.message);
+        closeModal('modalSetStatusManual');
+        closeModal('modalAdminCategory');
+        loadAdminDashboardData();
+      } else {
+        showToast(res.message, "error");
+      }
+    }
+
+    // ---------------------------------------------------------------
+    // PUSAT NOTIFIKASI IZIN (ADMIN)
+    // ---------------------------------------------------------------
+    async function openNotifikasiModal() {
+      const res = await apiPost({ action: 'get_notifikasi_izin' });
+      const container = document.getElementById('notifikasiListContainer');
+
+      if (res.success && res.notifikasi.length > 0) {
+        let html = "";
+        res.notifikasi.forEach(n => {
+          html += `
+            <div class="bg-slate-950/80 p-3 rounded-2xl border border-slate-800 space-y-2 text-xs">
+              <div class="flex justify-between items-center">
+                <span class="font-bold text-amber-400">${n.jenis_izin}</span>
+                <span class="text-[9px] text-slate-500">${n.tanggal}</span>
+              </div>
+              <p class="font-semibold text-white">${n.nama_guru}</p>
+              <p class="text-[11px] text-slate-300 italic">"${n.alasan}"</p>
+              <div class="grid grid-cols-3 gap-1 pt-1">
+                <button onclick="prosesIzinAction('${n.id_izin}', 'Disetujui')" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-1 rounded text-[10px]">Setujui</button>
+                <button onclick="prosesIzinAction('${n.id_izin}', 'Ditolak')" class="bg-slate-700 hover:bg-slate-600 text-white font-bold py-1 rounded text-[10px]">Tolak</button>
+                <button onclick="prosesIzinAction('${n.id_izin}', 'Tetapkan Alpa')" class="bg-rose-600 hover:bg-rose-500 text-white font-bold py-1 rounded text-[10px]">Set Alpa</button>
+              </div>
+            </div>
+          `;
+        });
+        container.innerHTML = html;
+      } else {
+        container.innerHTML = `<p class="text-xs text-center text-slate-500 py-4">Tidak ada pengajuan izin pending.</p>`;
+      }
+
+      openModal('modalNotifikasi');
+    }
+
+    async function prosesIzinAction(idIzin, status) {
+      const res = await apiPost({
+        action: 'proses_izin',
+        id_izin: idIzin,
+        status_persetujuan: status
+      });
+
+      if (res.success) {
+        showToast(res.message);
+        openNotifikasiModal();
+        loadAdminDashboardData();
+      } else {
+        showToast(res.message, "error");
+      }
+    }
+
+    function openPengaturanSekolahModal() {
+      openModal('modalPengaturanSekolah');
+    }
+
+    // HELPER MODAL TOGGLES
+    function openModal(id) {
+      document.getElementById(id).classList.remove('hidden');
+    }
+    function closeModal(id) {
+      document.getElementById(id).classList.add('hidden');
+    }
+async function processAdminExportExcel() {
+  const startDate = document.getElementById('adminExportStartDate').value;
+  const endDate = document.getElementById('adminExportEndDate').value;
+  if (!startDate || !endDate) return alert("Pilih tanggal terlebih dahulu!");
+
+  const res = await apiPost({ action: 'get_rekap_admin', startDate, endDate });
+  const rekapData = (res && res.success) ? res.data : [];
+
+  let html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="utf-8"></head><body><table>`;
+  html += `<tr><td colspan="9" style="font-weight:bold;text-align:center;">SD NEGERI RAPPOCINI</td></tr>`;
+  html += `<tr><td colspan="9" style="text-align:center;">REKAP PRESENSI GURU (${startDate} s.d ${endDate})</td></tr><tr></tr>`;
+  html += `<tr style="background:#d9e1f2;font-weight:bold;"><td>No</td><td>ID Guru</td><td>Nama Guru</td><td>Jabatan</td><td>Hadir</td><td>Terlambat</td><td>Izin/Sakit</td><td>Alpa</td><td>Total Jam</td></tr>`;
+
+  rekapData.forEach((row, i) => {
+    html += `<tr><td>${i+1}</td><td>'${row.id_guru}</td><td>${row.nama_guru}</td><td>${row.jabatan}</td><td>${row.hadir}</td><td>${row.terlambat}</td><td>${row.izin}</td><td>${row.alpa}</td><td>${row.total_jam}</td></tr>`;
+  });
+
+  const today = new Date().toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' });
+  html += `<tr></tr><tr><td colspan="6"></td><td colspan="3" style="text-align:center;">Makassar, ${today}</td></tr>`;
+  html += `<tr><td colspan="6"></td><td colspan="3" style="text-align:center;"><b>Kepala Sekolah SDN Rappocini</b></td></tr>`;
+  html += `<tr><td colspan="9" style="height:40px;"></td></tr>`;
+  html += `<tr><td colspan="6"></td><td colspan="3" style="text-align:center;"><b><u>( ________________________ )</u></b></td></tr>`;
+  html += `</table></body></html>`;
+
+  const blob = new Blob([html], { type: 'application/vnd.ms-excel;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `REKAP_PRESENSI_${startDate}_sd_${endDate}.xls`;
+  a.click();
+}
+// ---------------------------------------------------------------
+// FUNGSI LOGOUT / KELUAR APLIKASI
+// ---------------------------------------------------------------
+function logoutUser() {
+  localStorage.removeItem('presensi_user_session');
+  currentUser = null;
+
+  if (mediaStream) {
+    mediaStream.getTracks().forEach(track => track.stop());
+    mediaStream = null;
+  }
+
+  document.getElementById('viewBerandaGuru').classList.add('hidden');
+  document.getElementById('viewRiwayatGuru').classList.add('hidden');
+  document.getElementById('viewAdminDashboard').classList.add('hidden');
+  document.getElementById('bottomNav').classList.add('hidden');
+  document.getElementById('userHeaderBadge').classList.add('hidden');
+
+  document.getElementById('viewLogin').classList.remove('hidden');
+
+  if (typeof showToast === 'function') {
+    showToast("Berhasil keluar dari akun.", "success");
+  }
+}
+  </script>
+
+</body>
+</html>
